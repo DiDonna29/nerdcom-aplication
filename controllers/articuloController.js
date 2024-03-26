@@ -11,9 +11,28 @@ const getById = async (req, res) => {
 };
 
 const create = async (req, res) => {
-  const articulo = new Articulo(req.body);
-  await articulo.save();
-  res.json(articulo);
+  const {
+    Descripcion,
+    FechaIngreso,
+    FechaVencimiento,
+    Cantidad,
+    Costo,
+    Estado,
+  } = req.body;
+  try {
+    const articulo = new Articulo({
+      Descripcion,
+      FechaIngreso,
+      FechaVencimiento,
+      Cantidad,
+      Costo,
+      Estado,
+    });
+    await articulo.save();
+    res.json(articulo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const update = async (req, res) => {

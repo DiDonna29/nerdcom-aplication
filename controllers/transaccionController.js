@@ -1,5 +1,6 @@
 const Transaccion = require("../models/transaccion");
 const Articulo = require("../models/articulo");
+const TipoTransaccion = require("../models/tipoTransaccion");
 
 const getAll = async (req, res) => {
   const transacciones = await Transaccion.find()
@@ -14,34 +15,58 @@ const getById = async (req, res) => {
     .populate("articulo");
   res.json(transaccion);
 };
-
 const create = async (req, res) => {
-  const { tipoTransaccion, articulo, cantidad, costo } = req.body;
-
-  const transaccion = new Transaccion({
-    tipoTransaccion,
-    articulo,
-    cantidad,
-    costo,
-  });
-
-  const articuloToUpdate = await Articulo.findById(articulo);
-
-  if (tipoTransaccion === "Entrada") {
-    articuloToUpdate.cantidad += cantidad;
-  } else {
-    if (articuloToUpdate.cantidad < cantidad) {
-      return res
-        .status(400)
-        .json({ message: "Cantidad insuficiente en el inventario" });
+  const {
+    Descripcion,
+    TipoTransaccionId,
+    ArticuloId,
+    FechaDocumento,
+    Cantidad,
+    Estado,
+  } = req.body;
+  try {
+    const articulo = await Articulo.findById(ArticuloId);
+    if (!articulo) {
+      throw new Error("El artículo no existe");
     }
-    articuloToUpdate.cantidad -= cantidad;
+
+    const tipoTransaccion = await TipoTransaccion.findById(TipoTransaccionId);
+    if (!TipoTransaccion) {
+      throw new Error("El tipo de transacción no existe");
+    }
+
+    const costoTransaccion = Cantidad * articulo.costo;
+
+    if (tipoTransaccion.descripcion === "entrada") {
+      articulo.cantidad += Cantidad;
+    } else if (tipoTransaccion.descripcion === "salida") {
+      if (articulo.cantidad < Cantidad) {
+        throw new Error(
+          "No hay suficientes artículos disponibles para esta transacción"
+        );
+      }
+      articulo.cantidad -= Cantidad;
+    } else {
+      throw new Error("Tipo de transacción no válido");
+    }
+
+    await articulo.save();
+
+    const transaccion = new Transaccion({
+      Descripcion,
+      TipoTransaccionId,
+      FechaDocumento,
+      Cantidad,
+      Estado,
+      Costo: costoTransaccion,
+      ArticuloId,
+    });
+    await transaccion.save();
+
+    res.json(transaccion);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  await transaccion.save();
-  await articuloToUpdate.save();
-
-  res.json(transaccion);
 };
 
 const update = async (req, res) => {
