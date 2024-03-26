@@ -1,18 +1,17 @@
-// app.js
 const express = require("express");
 const bodyParser = require("body-parser");
-const router = require("./routes/indexRoutes");
-const connectDB = require("./DB_conecction");
+const connectDB = require("./DB_connection");
 
 const app = express();
 const port = 3001;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(connectDB());
 
-app.use("/api", router);
+(async () => {
+  await connectDB(); // Conectar a la base de datos
 
-app.listen(port, () => {
-  console.log(`Servidor en ejecución en http://localhost:${port}`);
-});
+  app.listen(port, () => {
+    console.log(`Servidor en ejecución en http://localhost:${port}`);
+  });
+})();
